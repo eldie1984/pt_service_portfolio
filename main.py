@@ -12,7 +12,7 @@ from contextlib import asynccontextmanager
 
 from app.config import settings
 from app.database import init_db
-from app.routers import portfolio, instruments, exchanges
+from app.routers import portfolio, instruments, exchanges,brokers
 from app.middleware.error_handler import setup_error_handlers
 from app.metrics import MetricsMiddleware, metrics_endpoint
 
@@ -25,13 +25,71 @@ async def lifespan(app: FastAPI):
     await init_db()
     yield
     # Shutdown
-    pass
+    from app.database.connection import Database
+    await Database.disconnect()
 
 app = FastAPI(
     title="Portfolio Management Service",
-    description="FastAPI service for portfolio management",
+    description="""
+REST API for managing investment portfolios, holdings, instruments, and exchanges.
+
+## Authentication
+
+All endpoints (except `/health` and `/metrics`) require a **JWT Bearer token**:
+
+```
+Authorization: Bearer <token>
+```
+
+## Error responses
+
+All errors return a consistent envelope:
+
+```json
+{
+  "error": "Human-readable message",
+  "status": 404,
+  "path": "/portfolios/99",
+  "timestamp": 1715000000.0
+}
+```
+
+## Rate limiting
+
+`/health` is limited to **60 requests/minute** per IP. Business endpoints inherit
+the global rate limiter configured via `RATE_LIMIT_PER_MINUTE`.
+""",
     version="2.0.0",
-    lifespan=lifespan
+    contact={
+        "name": "Diego Gasch",
+        "email": "eldie1984@gmail.com",
+    },
+    license_info={
+        "name": "Private",
+    },
+    openapi_tags=[
+        {
+            "name": "Health",
+            "description": "Service liveness and readiness checks.",
+        },
+        {
+            "name": "Metrics",
+            "description": "Prometheus-compatible metrics endpoint.",
+        },
+        {
+            "name": "Portfolios",
+            "description": "Create and manage investment portfolios and view performance summaries.",
+        },
+        {
+            "name": "Instruments",
+            "description": "Manage tradeable instruments (stocks, ETFs, crypto, etc.).",
+        },
+        {
+            "name": "Exchanges",
+            "description": "Manage trading venues and exchanges.",
+        },
+    ],
+    lifespan=lifespan,
 )
 
 # Rate limiting
@@ -79,6 +137,7 @@ async def metrics():
 app.include_router(portfolio.router, prefix="/portfolios", tags=["Portfolios"])
 app.include_router(instruments.router, prefix="/instruments", tags=["Instruments"])
 app.include_router(exchanges.router, prefix="/exchanges", tags=["Exchanges"])
+app.include_router(brokers.router, prefix="/brokers", tags=["Brokers"])
 
 if __name__ == "__main__":
     uvicorn.run(
