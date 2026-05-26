@@ -7,12 +7,17 @@ import time
 
 logger = logging.getLogger(__name__)
 
+
 class APIError(Exception):
     """Custom API error"""
-    def __init__(self, message: str, status_code: int = status.HTTP_500_INTERNAL_SERVER_ERROR):
+
+    def __init__(
+        self, message: str, status_code: int = status.HTTP_500_INTERNAL_SERVER_ERROR
+    ):
         self.message = message
         self.status_code = status_code
         super().__init__(self.message)
+
 
 async def api_error_handler(request: Request, exc: APIError):
     """Handle custom API errors"""
@@ -22,9 +27,10 @@ async def api_error_handler(request: Request, exc: APIError):
             "error": exc.message,
             "status": exc.status_code,
             "path": str(request.url.path),
-            "timestamp": time.time()
-        }
+            "timestamp": time.time(),
+        },
     )
+
 
 async def http_exception_handler(request: Request, exc: HTTPException):
     """Handle HTTP exceptions"""
@@ -34,9 +40,10 @@ async def http_exception_handler(request: Request, exc: HTTPException):
             "error": exc.detail,
             "status": exc.status_code,
             "path": str(request.url.path),
-            "timestamp": time.time()
-        }
+            "timestamp": time.time(),
+        },
     )
+
 
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     """Handle validation errors"""
@@ -47,9 +54,10 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             "details": exc.errors(),
             "status": status.HTTP_422_UNPROCESSABLE_ENTITY,
             "path": str(request.url.path),
-            "timestamp": time.time()
-        }
+            "timestamp": time.time(),
+        },
     )
+
 
 async def general_exception_handler(request: Request, exc: Exception):
     """Handle general exceptions"""
@@ -60,9 +68,10 @@ async def general_exception_handler(request: Request, exc: Exception):
             "error": "Internal server error",
             "status": status.HTTP_500_INTERNAL_SERVER_ERROR,
             "path": str(request.url.path),
-            "timestamp": time.time()
-        }
+            "timestamp": time.time(),
+        },
     )
+
 
 def setup_error_handlers(app: FastAPI):
     """Setup all error handlers"""
